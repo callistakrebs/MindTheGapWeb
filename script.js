@@ -32,6 +32,79 @@ fetch('data/existing-work.csv')
                 console.log(data[index])
             }
         });
+
+        // Extract unique models/benchmarks for the dropdown
+        const uniqueModels = [...new Set(data.map(row => row['model'] || 'Unknown'))];
+        const uniqueBenchmark = [...new Set(data.map(row => row['benchmark'] || 'Unknown'))];
+
+        const filterModelSelect = document.getElementById('filter-model-select');
+        uniqueModels.forEach(model => {
+            const option = document.createElement('option');
+            option.value = model;
+            option.textContent = model;
+            filterModelSelect.appendChild(option);
+        });
+
+        const filterBenchmarkSelect = document.getElementById('filter-benchmark-select');
+        uniqueBenchmark.forEach(benchmark => {
+            const option = document.createElement('option');
+            option.value = benchmark;
+            option.textContent = benchmark;
+            filterBenchmarkSelect.appendChild(option);
+        });
+
+        // Function to filter data and update the histogram
+        const updateHistogram = (selectedModel, selectedBenchmark) => {
+            const filteredData = data.filter(row => {
+                const modelMatch = selectedModel === 'all' || row['model'] === selectedModel;
+                const benchmarkMatch = selectedBenchmark === 'all' || row['benchmark'] === selectedBenchmark;
+                return modelMatch && benchmarkMatch;
+            });
+
+            // Recalculate bin counts
+            const binCounts = {0:0, 0.5:0, 1:0, 1.5:0, 2:0, 2.5:0, 3:0, 3.5:0, 4:0, 4.5:0, 5:0, 5.5:0, 6:0, 6.5:0, 7:0};
+            filteredData.forEach(row => {
+                const binValue = row['bin'];
+                if (binValue !== undefined) {
+                    binCounts[binValue] = (binCounts[binValue] || 0) + 1;
+                }
+            });
+
+            // Update the histogram
+            const bars = svg.selectAll('.bar')
+                .data(Object.entries(binCounts));
+
+            bars.enter()
+                .append('rect')
+                .attr('class', 'bar')
+                .merge(bars)
+                .transition()
+                .duration(300)
+                .attr('x', d => xScale(parseFloat(d[0])))
+                .attr('y', d => yScale(d[1]))
+                .attr('width', xScale(bins[1]) - xScale(bins[0]))
+                .attr('height', d => height - yScale(d[1]))
+                .attr('fill', '#2196f3');
+
+            bars.exit().remove();
+
+            const labels = svg.selectAll('.label')
+                .data(Object.entries(binCounts));
+
+            labels.enter()
+                .append('text')
+                .attr('class', 'label')
+                .merge(labels)
+                .transition()
+                .duration(300)
+                .attr('x', d => xScale(parseFloat(d[0])) + (xScale(bins[1]) - xScale(bins[0])) / 2)
+                .attr('y', d => yScale(d[1]) - 5)
+                .attr('text-anchor', 'middle')
+                .text(d => d[1]);
+
+            labels.exit().remove();
+        };
+
         // Count the number of rows in each bin
         const binCounts = {0:0, 0.5:0, 1:0, 1.5:0, 2:0, 2.5:0, 3:0, 3.5:0, 4:0, 4.5:0, 5:0, 5.5:0, 6:0, 6.5:0, 7:0};
         data.forEach(row => {
@@ -149,5 +222,21 @@ fetch('data/existing-work.csv')
             .attr('y', d => yScale(d[1]) - 5)
             .attr('text-anchor', 'middle')
             .text(d => d[1]);
+
+        // Initial rendering of the histogram
+        updateHistogram('all', 'all'); // Pass 'all' for both model and benchmark to include all data
+
+        // Add event listeners to both dropdowns
+        filterModelSelect.addEventListener('change', () => {
+            const selectedModel = filterModelSelect.value;
+            const selectedBenchmark = filterBenchmarkSelect.value;
+            updateHistogram(selectedModel, selectedBenchmark);
+        });
+
+        filterBenchmarkSelect.addEventListener('change', () => {
+            const selectedModel = filterModelSelect.value;
+            const selectedBenchmark = filterBenchmarkSelect.value;
+            updateHistogram(selectedModel, selectedBenchmark);
+        });
     })
     .catch(error => console.error('Error fetching or parsing CSV:', error));
