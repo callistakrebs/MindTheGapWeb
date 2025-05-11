@@ -88,6 +88,45 @@ fetch('data/existing-work.csv')
 
             bars.exit().remove();
 
+            // Rebind hover events for the tooltip
+            bars.on('mouseenter', function (event, d) {
+                const binValue = parseFloat(d[0]);
+                const filteredBinData = filteredData.filter(row => row['bin'] === binValue);
+
+                // Extract models and benchmarks
+                const models = [...new Set(filteredBinData.map(row => row['model'] || 'Unknown'))];
+                const benchmarks = [...new Set(filteredBinData.map(row => row['benchmark'] || 'Unknown'))];
+
+                // Update tooltip content
+                tooltip.innerHTML = `
+                    <strong>Models:</strong> ${models.join(', ')}<br>
+                    <strong>Benchmarks:</strong> ${benchmarks.join(', ')}
+                `;
+                tooltip.style.display = 'block';
+
+                // Highlight the bar
+                d3.select(this)
+                    .transition()
+                    .duration(300)
+                    .attr('fill', '#1976d2');
+            })
+            .on('mousemove', function (event) {
+                // Position the tooltip near the mouse cursor
+                tooltip.style.left = `${event.pageX + 10}px`;
+                tooltip.style.top = `${event.pageY + 10}px`;
+            })
+            .on('mouseleave', function () {
+                // Hide the tooltip
+                tooltip.style.display = 'none';
+
+                // Reset the bar color
+                d3.select(this)
+                    .transition()
+                    .duration(300)
+                    .attr('fill', '#2196f3');
+            });
+
+            // Update labels
             const labels = svg.selectAll('.label')
                 .data(Object.entries(binCounts));
 
@@ -169,7 +208,19 @@ fetch('data/existing-work.csv')
             .selectAll('text')
             .style('font-size', '14px'); // Increase font size for y-axis labels
 
-        // Add bars
+        // Create a tooltip element
+        const tooltip = document.createElement('div');
+        tooltip.id = 'tooltip';
+        tooltip.style.position = 'absolute';
+        tooltip.style.backgroundColor = 'rgba(0, 0, 0, 0.7)';
+        tooltip.style.color = 'white';
+        tooltip.style.padding = '8px';
+        tooltip.style.borderRadius = '4px';
+        tooltip.style.pointerEvents = 'none';
+        tooltip.style.display = 'none';
+        document.body.appendChild(tooltip);
+
+        // Add bars with hover functionality
         svg.selectAll('.bar')
             .data(Object.entries(binCounts))
             .enter()
@@ -181,34 +232,41 @@ fetch('data/existing-work.csv')
             .attr('height', d => height - yScale(d[1]))
             .attr('fill', '#2196f3')
             .on('mouseenter', function (event, d) {
-                // Animate the bar
+                // Filter data for the current bin
+                const binValue = parseFloat(d[0]);
+                const filteredData = data.filter(row => row['bin'] === binValue);
+
+                // Extract models and benchmarks
+                const models = [...new Set(filteredData.map(row => row['model'] || 'Unknown'))];
+                const benchmarks = [...new Set(filteredData.map(row => row['benchmark'] || 'Unknown'))];
+
+                // Update tooltip content
+                tooltip.innerHTML = `
+                    <strong>Models:</strong> ${models.join(', ')}<br>
+                    <strong>Benchmarks:</strong> ${benchmarks.join(', ')}
+                `;
+                tooltip.style.display = 'block';
+
+                // Highlight the bar
                 d3.select(this)
                     .transition()
                     .duration(300)
-                    .attr('fill', '#1976d2')
-                    .attr('height', height - yScale(d[1]) + 10)
-                    .attr('y', yScale(d[1]) - 10);
-
-                // Animate the label
-                svg.select(`.label[data-bin="${d[0]}"]`)
-                    .transition()
-                    .duration(300)
-                    .attr('y', yScale(d[1]) - 15); // Move the label up with the bar
+                    .attr('fill', '#1976d2');
             })
-            .on('mouseleave', function (event, d) {
-                // Reset the bar
+            .on('mousemove', function (event) {
+                // Position the tooltip near the mouse cursor
+                tooltip.style.left = `${event.pageX + 10}px`;
+                tooltip.style.top = `${event.pageY + 10}px`;
+            })
+            .on('mouseleave', function () {
+                // Hide the tooltip
+                tooltip.style.display = 'none';
+
+                // Reset the bar color
                 d3.select(this)
                     .transition()
                     .duration(300)
-                    .attr('fill', '#2196f3')
-                    .attr('height', height - yScale(d[1]))
-                    .attr('y', yScale(d[1]));
-
-                // Reset the label
-                svg.select(`.label[data-bin="${d[0]}"]`)
-                    .transition()
-                    .duration(300)
-                    .attr('y', yScale(d[1]) - 5); // Reset the label position
+                    .attr('fill', '#2196f3');
             });
 
         // Add labels
