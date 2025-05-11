@@ -104,26 +104,43 @@ fetch('data/existing-work.csv')
                 `;
                 tooltip.style.display = 'block';
 
-                // Highlight the bar
+                // Highlight the bar and extend it
                 d3.select(this)
                     .transition()
                     .duration(300)
-                    .attr('fill', '#1976d2');
+                    .attr('fill', '#1976d2')
+                    .attr('y', yScale(d[1]) - 5) // Move the bar slightly upward
+                    .attr('height', height - yScale(d[1]) + 5); // Extend the height
+
+                // Move the corresponding label upward
+                svg.select(`.label[data-bin="${binValue}"]`)
+                    .transition()
+                    .duration(300)
+                    .attr('y', yScale(d[1]) - 10); // Adjust label position
             })
             .on('mousemove', function (event) {
                 // Position the tooltip near the mouse cursor
                 tooltip.style.left = `${event.pageX + 10}px`;
                 tooltip.style.top = `${event.pageY + 10}px`;
             })
-            .on('mouseleave', function () {
+            .on('mouseleave', function (event, d) {
                 // Hide the tooltip
                 tooltip.style.display = 'none';
 
-                // Reset the bar color
+                // Reset the bar color, position, and size
                 d3.select(this)
                     .transition()
                     .duration(300)
-                    .attr('fill', '#2196f3');
+                    .attr('fill', '#2196f3')
+                    .attr('y', yScale(d[1])) // Reset the bar's original position
+                    .attr('height', height - yScale(d[1])); // Reset the bar's original height
+
+                // Reset the corresponding label position
+                const binValue = parseFloat(d[0]);
+                svg.select(`.label[data-bin="${binValue}"]`)
+                    .transition()
+                    .duration(300)
+                    .attr('y', yScale(d[1]) - 5); // Reset label position
             });
 
             // Update labels
