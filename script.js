@@ -8,6 +8,8 @@ fetch('data/existing-work.csv')
         const result = Papa.parse(csvText, { header: true });
         console.log('Parsed CSV:', result.data);
         const data = result.data; // Assuming 'value' is the key in your CSV
+
+        // Parse Data object to extract size, logsize, and histogram
         data.forEach((value, index) => {
             if (!data[index]['size']) {
                 console.warn(`Skipping row ${index} due to missing 'size' value.`);
@@ -37,23 +39,78 @@ fetch('data/existing-work.csv')
         const uniqueModels = [...new Set(data.map(row => row['model'] || 'Unknown'))];
         const uniqueBenchmark = [...new Set(data.map(row => row['benchmark'] || 'Unknown'))];
 
+        // Create dropdowns for filtering Model
         const filterModelSelect = document.getElementById('filter-model-select');
-        uniqueModels.forEach(model => {
+        uniqueModels.sort().forEach(model => {
             const option = document.createElement('option');
             option.value = model;
             option.textContent = model;
             filterModelSelect.appendChild(option);
         });
 
+        // Create dropdowns for filtering Benchmark
+        // TODO: add a search functionality to the benchmark dropdown
         const filterBenchmarkSelect = document.getElementById('filter-benchmark-select');
-        uniqueBenchmark.forEach(benchmark => {
+        uniqueBenchmark.sort().forEach(benchmark => {
             const option = document.createElement('option');
             option.value = benchmark;
             option.textContent = benchmark;
             filterBenchmarkSelect.appendChild(option);
         });
 
-        // Function to filter data and update the histogram
+        /**
+         * Calculates the count of unique benchmarks for each bin from the provided data.
+         *
+         * @param {Array<Object>} data - An array of objects where each object represents a row of data.
+         *                                Each row should have a `bin` property (numeric or string) and a `benchmark` property (string).
+         * @returns {Object} An object where the keys are bin values and the values are the counts of unique benchmarks in each bin.
+         *
+         * @example
+         * const data = [
+         *   { bin: 1, benchmark: 'A' },
+         *   { bin: 1, benchmark: 'B' },
+         *   { bin: 1, benchmark: 'A' },
+         *   { bin: 2, benchmark: 'C' }
+         * ];
+         * const result = getUniqueBenchmarksBinCounts(data);
+         * console.log(result); // { '0': 0, '0.5': 0, ..., '1': 2, '2': 1, ... }
+         */
+        const getUniqueBenchmarksBinCounts = (data) => {
+            // Recalculate bin counts to count unique benchmarks
+            const binCounts = {0:0, 0.5:0, 1:0, 1.5:0, 2:0, 2.5:0, 3:0, 3.5:0, 4:0, 4.5:0, 5:0, 5.5:0, 6:0, 6.5:0, 7:0};
+            const uniqueBenchmarksPerBin = {}; // Track unique benchmarks for each bin
+
+            data.forEach(row => {
+                const binValue = row['bin'];
+                const benchmark = row['benchmark'];
+
+                if (binValue !== undefined && benchmark) {
+                    if (!uniqueBenchmarksPerBin[binValue]) {
+                        uniqueBenchmarksPerBin[binValue] = new Set();
+                    }
+                    uniqueBenchmarksPerBin[binValue].add(benchmark); // Add benchmark to the set
+                }
+            });
+
+            // Convert the sets into counts
+            Object.keys(uniqueBenchmarksPerBin).forEach(bin => {
+                binCounts[bin] = uniqueBenchmarksPerBin[bin].size;
+            });
+
+            // Debugging: Log the unique benchmarks per bin and the final bin counts
+            console.log('Unique Benchmarks Per Bin:', uniqueBenchmarksPerBin);
+            console.log('Bin Counts:', binCounts);
+            return binCounts;
+        }
+
+        /**
+         * Updates the histogram visualization based on the selected model and benchmark.
+         * Filters the data, calculates bin counts, and updates the bars, labels, and tooltips
+         * in the histogram accordingly.
+         *
+         * @param {string} selectedModel - The selected model to filter the data. Use 'all' to include all models.
+         * @param {string} selectedBenchmark - The selected benchmark to filter the data. Use 'all' to include all benchmarks.
+         */
         const updateHistogram = (selectedModel, selectedBenchmark) => {
             const filteredData = data.filter(row => {
                 const modelMatch = selectedModel === 'all' || row['model'] === selectedModel;
@@ -61,14 +118,7 @@ fetch('data/existing-work.csv')
                 return modelMatch && benchmarkMatch;
             });
 
-            // Recalculate bin counts
-            const binCounts = {0:0, 0.5:0, 1:0, 1.5:0, 2:0, 2.5:0, 3:0, 3.5:0, 4:0, 4.5:0, 5:0, 5.5:0, 6:0, 6.5:0, 7:0};
-            filteredData.forEach(row => {
-                const binValue = row['bin'];
-                if (binValue !== undefined) {
-                    binCounts[binValue] = (binCounts[binValue] || 0) + 1;
-                }
-            });
+            const binCounts = getUniqueBenchmarksBinCounts(filteredData);
 
             // Update the histogram
             const bars = svg.selectAll('.bar')
@@ -161,17 +211,7 @@ fetch('data/existing-work.csv')
             labels.exit().remove();
         };
 
-        // Count the number of rows in each bin
-        const binCounts = {0:0, 0.5:0, 1:0, 1.5:0, 2:0, 2.5:0, 3:0, 3.5:0, 4:0, 4.5:0, 5:0, 5.5:0, 6:0, 6.5:0, 7:0};
-        data.forEach(row => {
-            const binValue = row['bin'];
-            if (binValue !== undefined) {
-                binCounts[binValue] = (binCounts[binValue] || 0) + 1;
-            }
-        });
-
-        // Log the bin counts for debugging
-        console.log('Bin Counts:', binCounts);
+        const binCounts = getUniqueBenchmarksBinCounts(data);
 
         // Plot the total number of rows for each bin using D3
         const binViz = document.getElementById('bin-viz') || document.createElement('div');
@@ -181,14 +221,16 @@ fetch('data/existing-work.csv')
         // viz.appendChild(binViz);
 
         // Set up D3 dimensions and scales
-        const width = 700;
-        const height = 350;
-        const margin = { top: 20, right: 20, bottom: 40, left: 40 };
+        const width = 800; // Increase the width
+        const height = 500; // Increase the height
+        const margin = { top: 50, right: 50, bottom: 70, left: 70 }; // Adjust margins for more space
 
-        const svg = d3.select(binViz)
+        // Add a class to the SVG container
+        const svg = d3.select('#bin-viz')
             .append('svg')
-            .attr('width', width + margin.left + margin.right)
-            .attr('height', height + margin.top + margin.bottom)
+            .attr('class', 'histogram')
+            .attr('width', width + margin.left + margin.right) // Adjust for new width
+            .attr('height', height + margin.top + margin.bottom) // Adjust for new height
             .append('g')
             .attr('transform', `translate(${margin.left},${margin.top})`);
 
@@ -224,6 +266,24 @@ fetch('data/existing-work.csv')
             .call(d3.axisLeft(yScale))
             .selectAll('text')
             .style('font-size', '14px'); // Increase font size for y-axis labels
+
+        // Add x-axis label
+        svg.append('text')
+            .attr('class', 'x-axis-label')
+            .attr('x', width / 2) // Center the label horizontally
+            .attr('y', height + margin.bottom - 20) // Position below the x-axis
+            .attr('text-anchor', 'middle') // Center the text
+            .style('font-size', '20px') // Optional: Set font size
+            .text('Number of Training Examples');
+
+        // Add y-axis label
+        svg.append('text')
+            .attr('class', 'y-axis-label')
+            .attr('x', -height / 2)
+            .attr('y', -margin.left + 30)
+            .attr('text-anchor', 'middle')
+            .attr('transform', 'rotate(-90)')
+            .text('Number of Benchmarks');
 
         // Create a tooltip element
         const tooltip = document.createElement('div');

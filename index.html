@@ -8,20 +8,25 @@
 </head>
 <body>
   <h1>Mind The Gap</h1>
-<div id="filter-model-container">
-    <label for="filter-model-select">Filter by Model:</label>
-    <select id="filter-model-select">
-        <option value="all">All</option>
-    </select>
-</div>
-<div id="filter-benchmark-container">
-  <label for="filter-benchmark-select">Filter by Benchmark:</label>
-  <select id="filter-benchmark-select">
-      <option value="all">All</option>
-  </select>
-</div>
-<div id="bin-viz"></div>
-  <script src="https://d3js.org/d3.v7.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
-  <script src="script.js"></script></body>
+  <div id="graph-container">
+    <div id="bin-viz"></div>
+    <div id="filter-container">
+      <div id="filter-model-container">
+          <label for="filter-model-select">Filter by Model:</label>
+          <select id="filter-model-select">
+              <option value="all">All</option>
+          </select>
+      </div>
+      <div id="filter-benchmark-container">
+        <label for="filter-benchmark-select">Filter by Benchmark:</label>
+        <select id="filter-benchmark-select">
+            <option value="all">All</option>
+        </select>
+      </div>
+    </div>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+    <script src="script.js"></script>
+  </div>
+</body>
 </html>
