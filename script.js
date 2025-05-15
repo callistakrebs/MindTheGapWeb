@@ -146,7 +146,7 @@ fetch('data/existing-work.csv')
                 const modelMatch = selectedModel === 'all' || row['model'] === selectedModel;
                 const benchmarkMatch = selectedBenchmark === 'all' || row['benchmark'] === selectedBenchmark;
                 const modalityMatch = selectedModality === 'all' || row['modality'] === selectedModality;
-                const domainMatch = selectedDomain === 'all' || row['benchmark'] === selectedDomain;
+                const domainMatch = selectedDomain === 'all' || row['domain'] === selectedDomain;
                 const taskMatch = selectedTask === 'all' || row['task'] === selectedTask;
                 return modelMatch && benchmarkMatch && modalityMatch && domainMatch && taskMatch;
             });
@@ -392,7 +392,7 @@ fetch('data/existing-work.csv')
             .text(d => d[1]);
 
         // Initial rendering of the histogram
-        updateHistogram('all', 'all','all','all','all'); // Pass 'all' for both model and benchmark to include all data
+        updateHistogram('all', 'all', 'all', 'all', 'all'); // Pass 'all' for both model and benchmark to include all data
 
         // Add event listeners to both dropdowns
         filterModelSelect.addEventListener('change', () => {
