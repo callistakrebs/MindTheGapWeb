@@ -36,8 +36,11 @@ fetch('data/existing-work.csv')
         });
 
         // Extract unique models/benchmarks for the dropdown
-        const uniqueModels = [...new Set(data.map(row => row['model'] || 'Unknown'))];
-        const uniqueBenchmark = [...new Set(data.map(row => row['benchmark'] || 'Unknown'))];
+        const uniqueModels = [...new Set(data.map(row => row['model']))];
+        const uniqueBenchmark = [...new Set(data.map(row => row['benchmark']))];
+        const uniqueModality = [...new Set(data.map(row => row['modality']))];
+        const uniqueDomain = [...new Set(data.map(row => row['domain']))];
+        const uniqueTask = [...new Set(data.map(row => row['task']))];
 
         // Create dropdowns for filtering Model
         const filterModelSelect = document.getElementById('filter-model-select');
@@ -56,6 +59,32 @@ fetch('data/existing-work.csv')
             option.value = benchmark;
             option.textContent = benchmark;
             filterBenchmarkSelect.appendChild(option);
+        });
+
+        // Create dropdowns for filtering Modality
+        // TODO: add a search functionality to the dropdown
+        const filterModalitySelect = document.getElementById('filter-modality-select');
+        uniqueModality.sort().forEach(modality => {
+            const option = document.createElement('option');
+            option.value = modality;
+            option.textContent = modality;
+            filterModalitySelect.appendChild(option);
+        });
+
+        const filterDomainSelect = document.getElementById('filter-domain-select');
+        uniqueDomain.sort().forEach(domain => {
+            const option = document.createElement('option');
+            option.value = domain;
+            option.textContent = domain;
+            filterDomainSelect.appendChild(option);
+        });
+
+        const filterTaskSelect = document.getElementById('filter-task-select');
+        uniqueTask.sort().forEach(task => {
+            const option = document.createElement('option');
+            option.value = task;
+            option.textContent = task;
+            filterTaskSelect.appendChild(option);
         });
 
         /**
@@ -78,17 +107,18 @@ fetch('data/existing-work.csv')
         const getUniqueBenchmarksBinCounts = (data) => {
             // Recalculate bin counts to count unique benchmarks
             const binCounts = {0:0, 0.5:0, 1:0, 1.5:0, 2:0, 2.5:0, 3:0, 3.5:0, 4:0, 4.5:0, 5:0, 5.5:0, 6:0, 6.5:0, 7:0};
-            const uniqueBenchmarksPerBin = {}; // Track unique benchmarks for each bin
+            const uniqueBenchmarksPerBin = {}; // Track unique benchmark,size pairs for each bin
 
             data.forEach(row => {
                 const binValue = row['bin'];
                 const benchmark = row['benchmark'];
+                const size = row['size'];
 
-                if (binValue !== undefined && benchmark) {
+                if (binValue !== undefined && benchmark && size) {
                     if (!uniqueBenchmarksPerBin[binValue]) {
                         uniqueBenchmarksPerBin[binValue] = new Set();
                     }
-                    uniqueBenchmarksPerBin[binValue].add(benchmark); // Add benchmark to the set
+                    uniqueBenchmarksPerBin[binValue].add(`${benchmark}__${size}`); // Add unique benchmark-size pair to the set
                 }
             });
 
@@ -111,11 +141,14 @@ fetch('data/existing-work.csv')
          * @param {string} selectedModel - The selected model to filter the data. Use 'all' to include all models.
          * @param {string} selectedBenchmark - The selected benchmark to filter the data. Use 'all' to include all benchmarks.
          */
-        const updateHistogram = (selectedModel, selectedBenchmark) => {
+        const updateHistogram = (selectedModel, selectedBenchmark, selectedModality, selectedDomain, selectedTask) => {
             const filteredData = data.filter(row => {
                 const modelMatch = selectedModel === 'all' || row['model'] === selectedModel;
                 const benchmarkMatch = selectedBenchmark === 'all' || row['benchmark'] === selectedBenchmark;
-                return modelMatch && benchmarkMatch;
+                const modalityMatch = selectedModality === 'all' || row['modality'] === selectedModality;
+                const domainMatch = selectedDomain === 'all' || row['benchmark'] === selectedDomain;
+                const taskMatch = selectedTask === 'all' || row['task'] === selectedTask;
+                return modelMatch && benchmarkMatch && modalityMatch && domainMatch && taskMatch;
             });
 
             const binCounts = getUniqueBenchmarksBinCounts(filteredData);
@@ -359,19 +392,50 @@ fetch('data/existing-work.csv')
             .text(d => d[1]);
 
         // Initial rendering of the histogram
-        updateHistogram('all', 'all'); // Pass 'all' for both model and benchmark to include all data
+        updateHistogram('all', 'all','all','all','all'); // Pass 'all' for both model and benchmark to include all data
 
         // Add event listeners to both dropdowns
         filterModelSelect.addEventListener('change', () => {
             const selectedModel = filterModelSelect.value;
             const selectedBenchmark = filterBenchmarkSelect.value;
-            updateHistogram(selectedModel, selectedBenchmark);
+            const selectedModality = filterModalitySelect.value;
+            const selectedDomain = filterDomainSelect.value;
+            const selectedTask = filterTaskSelect.value;
+            updateHistogram(selectedModel, selectedBenchmark, selectedModality, selectedDomain, selectedTask);
         });
 
         filterBenchmarkSelect.addEventListener('change', () => {
             const selectedModel = filterModelSelect.value;
             const selectedBenchmark = filterBenchmarkSelect.value;
-            updateHistogram(selectedModel, selectedBenchmark);
+            const selectedModality = filterModalitySelect.value;
+            const selectedDomain = filterDomainSelect.value;
+            const selectedTask = filterTaskSelect.value;
+            updateHistogram(selectedModel, selectedBenchmark, selectedModality, selectedDomain, selectedTask);
+        });
+
+        filterModalitySelect.addEventListener('change', () => {
+            const selectedModel = filterModelSelect.value;
+            const selectedBenchmark = filterBenchmarkSelect.value;
+            const selectedModality = filterModalitySelect.value;
+            const selectedDomain = filterDomainSelect.value;
+            const selectedTask = filterTaskSelect.value;
+            updateHistogram(selectedModel, selectedBenchmark, selectedModality, selectedDomain, selectedTask);
+        });
+        filterDomainSelect.addEventListener('change', () => {
+            const selectedModel = filterModelSelect.value;
+            const selectedBenchmark = filterBenchmarkSelect.value;
+            const selectedModality = filterModalitySelect.value;
+            const selectedDomain = filterDomainSelect.value;
+            const selectedTask = filterTaskSelect.value;
+            updateHistogram(selectedModel, selectedBenchmark, selectedModality, selectedDomain, selectedTask);
+        });
+        filterTaskSelect.addEventListener('change', () => {
+            const selectedModel = filterModelSelect.value;
+            const selectedBenchmark = filterBenchmarkSelect.value;
+            const selectedModality = filterModalitySelect.value;
+            const selectedDomain = filterDomainSelect.value;
+            const selectedTask = filterTaskSelect.value;
+            updateHistogram(selectedModel, selectedBenchmark, selectedModality, selectedDomain, selectedTask);
         });
     })
     .catch(error => console.error('Error fetching or parsing CSV:', error));
